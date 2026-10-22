@@ -1,0 +1,19 @@
+id: mistertick-dracula
+name: Dracula
+version: 0.0.0
+main: dist/index.js
+tier: free
+capabilities:
+  - theme
+author: Mr. Tick
+shortDescription: Dracula theme with light and dark palettes
+description: Customize Mr. Tick with Dracula colors while preserving the application's light and dark modes.
+iconUrl: https://raw.githubusercontent.com/mistertick/dracula-theme/main/icon.png
+sourceUrl: https://github.com/mistertick/dracula-theme
+homepage: https://github.com/mistertick/dracula-theme#readme
+tags:
+  - theme
+  - dracula
+  - dark
+  - light
+requiredApiVersion: '>=0.10.0'

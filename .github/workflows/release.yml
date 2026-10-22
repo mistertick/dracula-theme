@@ -1,0 +1,171 @@
+name: Dracula CI/CD
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: dracula-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Build, Typecheck, Lint & Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install locked dependencies
+        run: yarn install --immutable
+
+      - name: Build standalone addon
+        run: yarn build
+
+      - name: Typecheck
+        run: yarn typecheck
+
+      - name: Lint
+        run: yarn lint:fix
+
+      - name: Reject uncommitted lint fixes
+        run: git diff --exit-code
+
+      - name: Test bundled theme
+        run: yarn test:unit
+
+      - name: Validate addon manifest
+        run: yarn validate
+
+  release:
+    name: Version, Release & Catalog
+    needs: test
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install locked dependencies
+        run: yarn install --immutable
+
+      - name: Prepare version pull request
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          version: yarn changeset version
+          title: 'chore: release Dracula'
+          commit: 'chore: version Dracula'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check published release
+        id: release_check
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG_NAME="v${VERSION}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG_NAME}" >> "$GITHUB_OUTPUT"
+
+          STATUS=$(curl --silent --show-error \
+            --output "$RUNNER_TEMP/dracula-release.json" \
+            --write-out '%{http_code}' \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${TAG_NAME}")
+
+          case "$STATUS" in
+            200) echo 'exists=true' >> "$GITHUB_OUTPUT" ;;
+            404) echo 'exists=false' >> "$GITHUB_OUTPUT" ;;
+            *) cat "$RUNNER_TEMP/dracula-release.json"; exit 1 ;;
+          esac
+
+      - name: Package addon using the SDK
+        if: steps.changesets.outputs.hasChangesets == 'false' && steps.release_check.outputs.exists == 'false'
+        env:
+          VERSION: ${{ steps.release_check.outputs.version }}
+          TAG_NAME: ${{ steps.release_check.outputs.tag }}
+        run: |
+          DOWNLOAD_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG_NAME}/mistertick-dracula-${VERSION}.tladdon"
+          yarn build
+          yarn sync:manifest
+          yarn pkg --download-url "$DOWNLOAD_URL"
+          yarn validate
+
+      - name: Commit generated manifest
+        id: manifest
+        if: steps.changesets.outputs.hasChangesets == 'false' && steps.release_check.outputs.exists == 'false'
+        env:
+          TAG_NAME: ${{ steps.release_check.outputs.tag }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add manifest.yaml
+
+          if ! git diff --staged --quiet; then
+            git commit -m "chore(release): update Dracula manifest for ${TAG_NAME} [skip ci]"
+            git push origin HEAD:main
+          fi
+
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub Release
+        if: steps.changesets.outputs.hasChangesets == 'false' && steps.release_check.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_check.outputs.tag }}
+          name: Dracula ${{ steps.release_check.outputs.tag }}
+          target_commitish: ${{ steps.manifest.outputs.commit }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            *.tladdon
+            manifest.yaml
+
+      - name: Publish released manifest to the catalog
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        env:
+          TAG_NAME: ${{ steps.release_check.outputs.tag }}
+        run: |
+          MANIFEST_URL="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${TAG_NAME}/manifest.yaml"
+          PAYLOAD=$(jq -n \
+            --arg addonId 'mistertick-dracula' \
+            --arg manifestUrl "$MANIFEST_URL" \
+            '{addonId: $addonId, manifestUrl: $manifestUrl}')
+
+          curl --fail-with-body --silent --show-error \
+            --header 'Content-Type: application/json' \
+            --data "$PAYLOAD" \
+            'https://addons-manifest.mistertick.workers.dev/'
