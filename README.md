@@ -21,7 +21,7 @@ yarn validate
 
 Edit [globals.css](globals.css) to change the colors. The build embeds the entire stylesheet into JavaScript, so the installed addon does not need filesystem access or private monorepo packages. The [icon](icon.png) is also included in the package.
 
-The minimum SDK version is `0.11.0`. Packaging metadata lives in [manifest.yaml](manifest.yaml).
+The minimum SDK version for this revision is `0.12.0`. Packaging metadata lives in [manifest.yaml](manifest.yaml).
 
 ## Releases
 
