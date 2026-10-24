@@ -1,5 +1,11 @@
 # @mr-tick/dracula-theme
 
+## 0.3.0
+
+### Minor Changes
+
+- 4f6ad9f: Build and package Dracula against the published SDK 0.12 with an updated dependency and lockfile. Keep the theme capability and stylesheet behavior unchanged; the official SDK CLI generates the new release manifest with the matching API requirement.
+
 ## 0.2.0
 
 ### Minor Changes
