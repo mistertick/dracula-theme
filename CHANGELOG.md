@@ -1,5 +1,11 @@
 # @mr-tick/dracula-theme
 
+## 0.3.1
+
+### Patch Changes
+
+- c2d245f: Atualiza dependência do SDK para 0.13.0.
+
 ## 0.3.0
 
 ### Minor Changes
