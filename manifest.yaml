@@ -16,7 +16,7 @@ tags:
   - light
 tier: free
 downloadUrl: https://github.com/mistertick/dracula-theme/releases/download/v0.3.0/mistertick-dracula-0.3.0.tladdon
-requiredApiVersion: '>=0.12.0'
+requiredApiVersion: '>=0.13.0'
 releaseDate: '2026-10-24'
 changelog:
   - Release 0.1.0
