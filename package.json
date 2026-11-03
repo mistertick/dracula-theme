@@ -28,7 +28,7 @@
     "changeset": "changeset"
   },
   "dependencies": {
-    "@mr-tick/sdk": "0.13.0"
+    "@mr-tick/sdk": "portal:../metric/src/apps/sdk"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.6",
