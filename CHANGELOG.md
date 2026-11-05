@@ -1,5 +1,11 @@
 # @mr-tick/dracula-theme
 
+## 0.3.2
+
+### Patch Changes
+
+- 3db1f40: Atualiza a dependência para @mr-tick/sdk@^0.14.0 e ajusta requiredApiVersion para >=0.14.0.
+
 ## 0.3.1
 
 ### Patch Changes
