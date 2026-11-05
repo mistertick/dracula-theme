@@ -2,4 +2,4 @@
 '@mr-tick/dracula-theme': patch
 ---
 
-Usa o SDK local via `portal:../metric/src/apps/sdk` e valida o tema com os contratos atuais, sem depender de uma publicação do SDK.
+Atualiza a dependência para @mr-tick/sdk@^0.14.0 e ajusta requiredApiVersion para >=0.14.0.
