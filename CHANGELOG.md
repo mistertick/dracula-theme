@@ -1,5 +1,11 @@
 # @mr-tick/dracula-theme
 
+## 0.3.3
+
+### Patch Changes
+
+- ee77864: Atualiza `@mr-tick/sdk` para `^0.15.0` e compatibilidade de API `>=0.15.0`.
+
 ## 0.3.2
 
 ### Patch Changes
